@@ -16,7 +16,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
-    "deploy": "yarn build && aws s3 sync build/ s3://myawesomeapp.com --delete"
+    "deploy": "yarn build && aws s3 sync build/ s3://dl64rye8ymkqf.cloudfront.net --delete"
   },
   "eslintConfig": {
     "extends": "react-app"
