@@ -1,38 +1,35 @@
-#yaml 
-# Javascript Node CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-javascript/ for more details
-#
+
+defaults: &defaults
+  docker:
+    - image: jtredoux/node-aws:latest
+
 version: 2
 jobs:
   build:
-    docker:
-      # specify the version you desire here
-      - image: circleci/node:7.10
-# Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/mongo:3.4.4
-working_directory: ~/repo
-steps:
+    <<: *defaults
+    steps:
       - checkout
-# Download and cache dependencies
-      - restore_cache:
-          keys:
-          - v1-dependencies-{{ checksum "package.json" }}
-          # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
-- run: yarn install
-- save_cache:
+      - run: npm install
+      - run: npm run build
+      - persist_to_workspace:
+          root: .
           paths:
-            - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
-# run tests!
-      - run: yarn test
-      - run: sudo apt-get update && sudo apt-get install -y python-dev
-      - run: sudo curl -O https://bootstrap.pypa.io/get-pip.py
-      - run: sudo python get-pip.py
-      - run: sudo pip install awscli --upgrade
-      - run: aws --version
-      - run: aws s3 ls
-      - run: yarn run deploy
+            - build/*
+
+  deploy:
+    <<: *defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: build
+      - run: aws configure set default.region eu-west-2
+      - run: aws s3 sync build $S3_BUCKET --acl public-read --delete
+
+workflows:
+  version: 2
+  release_branches:
+    jobs:
+      - build
+      - deploy:
+          requires:
+            - build
